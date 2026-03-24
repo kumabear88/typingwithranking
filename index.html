@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>東湖國小打字小冒險</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 FontAwesome 圖示 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* 自定義動畫與字體 */
+        @import url('https://fonts.googleapis.com/css2?family=Comic+Neue:wght@700&display=swap');
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8fafc;
+        }
+
+        .font-handwriting {
+            font-family: 'Comic Neue', 'Comic Sans MS', cursive;
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .animate-bounce-in {
+            animation: bounceIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .pattern-bg {
+            background-image: radial-gradient(rgba(255, 255, 255, 0.2) 2px, transparent 2px);
+            background-size: 20px 20px;
+        }
+        
+        /* 隱藏預設版面，透過 JS 控制顯示 */
+        .screen-section {
+            display: none;
+        }
+
+        /* 隱藏滾動條但保持可滾動 */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* 虛擬鍵盤專屬樣式 */
+        .vk-key {
+            position: relative; width: 32px; height: 32px;
+            background-color: #fff; border: 2px solid #cbd5e1; border-radius: 6px;
+            display: flex; align-items: center; justify-content: center;
+            color: #64748b; font-family: sans-serif; transition: all 0.2s ease;
+        }
+        @media (min-width: 768px) {
+            .vk-key { width: 48px; height: 48px; border-radius: 8px; }
+        }
+        
+        .vk-en, .vk-zh { transition: all 0.3s ease; position: absolute; line-height: 1; }
+
+        /* 英文模式 (放大英文字母) */
+        #virtual-keyboard.mode-en .vk-en { font-size: 18px; font-weight: 900; color: #0f172a; opacity: 1; z-index: 2; top: 6px; left: 6px; }
+        #virtual-keyboard.mode-en .vk-zh { font-size: 10px; font-weight: normal; color: #94a3b8; opacity: 0.4; z-index: 1; bottom: 2px; right: 2px; }
+        @media (min-width: 768px) {
+            #virtual-keyboard.mode-en .vk-en { font-size: 24px; top: 8px; left: 10px; }
+            #virtual-keyboard.mode-en .vk-zh { font-size: 12px; bottom: 4px; right: 6px; }
+        }
+
+        /* 中文模式 (放大注音符號) */
+        #virtual-keyboard.mode-zh .vk-zh { font-size: 18px; font-weight: 900; color: #0f172a; opacity: 1; z-index: 2; bottom: 6px; right: 6px; }
+        #virtual-keyboard.mode-zh .vk-en { font-size: 10px; font-weight: normal; color: #94a3b8; opacity: 0.4; z-index: 1; top: 2px; left: 2px; }
+        @media (min-width: 768px) {
+            #virtual-keyboard.mode-zh .vk-zh { font-size: 24px; bottom: 8px; right: 8px; }
+            #virtual-keyboard.mode-zh .vk-en { font-size: 12px; top: 4px; left: 6px; }
+        }
+
+        /* 虛擬鍵盤的「發光」樣式 */
+        .vk-key.highlight {
+            background-color: #fde047; border-color: #eab308; color: #713f12;
+            transform: translateY(-4px) scale(1.15);
+            box-shadow: 0 4px 15px rgba(234, 179, 8, 0.7); z-index: 10;
+        }
+        .vk-key.highlight .vk-zh, .vk-key.highlight .vk-en { color: #713f12; opacity: 1; }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-6 flex flex-col items-center justify-center text-slate-800" onclick="handleGlobalClick()">
+
+    <div class="max-w-4xl w-full bg-white rounded-3xl shadow-xl overflow-hidden border-4 border-blue-200 relative" onclick="event.stopPropagation()">
+        
+        <!-- 標題區 -->
+        <div class="bg-blue-500 p-6 text-center relative overflow-hidden">
+            <div class="absolute inset-0 pattern-bg opacity-50"></div>
+            <h1 class="text-3xl font-bold text-white flex items-center justify-center gap-3 relative z-10">
+                <i class="fa-solid fa-keyboard text-2xl"></i>
+                東湖國小打字小冒險
+            </h1>
+        </div>
+
+        <div class="p-4 md:p-8 min-h-[500px]">
+            
+            <!-- 畫面 1：學生登入畫面 -->
+            <div id="login-screen" class="screen-section animate-fade-in flex flex-col items-center justify-center py-8">
+                <div class="text-7xl mb-6 animate-bounce">🎒</div>
+                <h2 class="text-3xl font-black text-blue-700 mb-2">準備開始冒險囉！</h2>
+                <p class="text-gray-500 mb-8 font-medium">請輸入你的班級和座號，系統會自動幫你記錄成績喔！</p>
+                
+                <div class="bg-blue-50 border-4 border-blue-200 rounded-3xl p-8 max-w-sm w-full shadow-inner">
+                    <div class="flex flex-col gap-5">
+                        <div>
+                            <label class="block text-lg font-bold text-blue-800 mb-2"><i class="fa-solid fa-school"></i> 班級 (例如: 301)</label>
+                            <input type="text" id="login-class" class="w-full text-center px-4 py-3 border-2 border-blue-300 rounded-xl focus:outline-none focus:border-blue-500 text-2xl font-bold transition-colors" maxlength="4">
+                        </div>
+                        <div>
+                            <label class="block text-lg font-bold text-blue-800 mb-2"><i class="fa-solid fa-chair"></i> 座號 (例如: 05)</label>
+                            <input type="text" id="login-seat" class="w-full text-center px-4 py-3 border-2 border-blue-300 rounded-xl focus:outline-none focus:border-blue-500 text-2xl font-bold transition-colors" maxlength="2">
+                        </div>
+                        <p id="login-error" class="hidden text-red-500 text-center font-bold text-sm animate-pulse">班級和座號不能空白喔！</p>
+                        <button onclick="loginStudent()" class="mt-2 w-full bg-blue-500 hover:bg-blue-600 text-white font-black text-xl py-4 rounded-2xl shadow-lg transition-transform transform hover:scale-105 flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-play"></i> 進入遊戲
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 教師後台入口按鈕 (隱藏在右下角) -->
+                <button onclick="showScreen('teacher-login-screen')" class="absolute bottom-4 right-4 text-gray-400 hover:text-gray-600 transition-colors text-sm font-bold flex items-center gap-1">
+                    <i class="fa-solid fa-lock"></i> 教師後台
+                </button>
+            </div>
+
+            <!-- 畫面 2：教師登入畫面 -->
+            <div id="teacher-login-screen" class="screen-section animate-fade-in flex flex-col items-center justify-center py-12">
+                <div class="text-6xl mb-6 text-gray-400"><i class="fa-solid fa-user-tie"></i></div>
+                <h2 class="text-2xl font-black text-gray-700 mb-6">教師專屬後台登入</h2>
+                <div class="bg-gray-50 border-2 border-gray-200 rounded-2xl p-6 max-w-sm w-full shadow-sm text-center">
+                    <input type="password" id="teacher-password" placeholder="請輸入密碼" class="w-full text-center px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-gray-500 text-xl mb-4">
+                    <p id="teacher-login-error" class="hidden text-red-500 text-sm font-bold mb-4">密碼錯誤</p>
+                    <div class="flex gap-3 justify-center">
+                        <button onclick="showScreen('login-screen')" class="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded-xl transition-colors">返回</button>
+                        <button onclick="loginTeacher()" class="px-6 py-2 bg-gray-700 hover:bg-gray-800 text-white font-bold rounded-xl transition-colors">登入</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 畫面 3：難度選擇畫面 (學生登入後) -->
+            <div id="intro-screen" class="screen-section animate-fade-in space-y-8">
+                <!-- 排行榜按鈕 -->
+                <div class="flex justify-end mb-2">
+                    <button onclick="showLeaderboard()" class="bg-yellow-400 hover:bg-yellow-500 text-yellow-900 px-4 py-2 rounded-full font-bold shadow-md transition-transform transform hover:scale-105 flex items-center gap-2 border-2 border-yellow-200">
+                        <i class="fa-solid fa-trophy"></i> 英雄排行榜
+                    </button>
+                </div>
+
+                <div class="flex items-start space-x-4 mb-8 bg-white p-4 rounded-2xl shadow-sm border-2 border-blue-100">
+                    <div class="bg-blue-100 p-3 rounded-full flex-shrink-0">
+                        <i class="fa-solid fa-face-smile text-3xl text-blue-600 w-10 h-10 flex items-center justify-center"></i>
+                    </div>
+                    <div class="flex-1 pt-2">
+                        <p class="text-gray-700 text-lg font-medium leading-relaxed">
+                            <span class="text-blue-600 font-black" id="welcome-student-name"></span> 同學你好！<br>
+                            歡迎來到打字挑戰！每關會有 <strong>25 題</strong>，打得又快又正確，系統就會自動幫你記錄成績喔！
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <button onclick="startGame('easy')" class="p-6 bg-green-50 hover:bg-green-100 text-green-800 rounded-2xl transition-all transform hover:-translate-y-1 border-2 border-green-200 flex flex-col items-center gap-2 shadow-sm">
+                        <span class="text-3xl">🌱</span>
+                        <span class="text-xl font-bold">新手等級</span>
+                        <span class="text-sm text-center font-medium">隨機字母與注音<br/>(共 25 題)</span>
+                    </button>
+                    <button onclick="startGame('medium')" class="p-6 bg-yellow-50 hover:bg-yellow-100 text-yellow-800 rounded-2xl transition-all transform hover:-translate-y-1 border-2 border-yellow-200 flex flex-col items-center gap-2 shadow-sm">
+                        <span class="text-3xl">⭐</span>
+                        <span class="text-xl font-bold">進階等級</span>
+                        <span class="text-sm text-center font-medium">簡單單字與小學詞彙<br/>(共 25 題)</span>
+                    </button>
+                    <button onclick="startGame('hard')" class="p-6 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-2xl transition-all transform hover:-translate-y-1 border-2 border-blue-200 flex flex-col items-center gap-2 shadow-sm">
+                        <span class="text-3xl">🚀</span>
+                        <span class="text-xl font-bold">高手等級</span>
+                        <span class="text-sm text-center font-medium">長單字與熱門句子<br/>(共 25 題)</span>
+                    </button>
+                </div>
+                
+                <div class="text-center mt-4">
+                    <button onclick="logoutStudent()" class="text-gray-400 hover:text-red-500 font-bold transition-colors underline text-sm">不是我？切換帳號</button>
+                </div>
+            </div>
+
+            <!-- 畫面 4：遊戲進行畫面 -->
+            <div id="playing-screen" class="screen-section animate-fade-in">
+                <div class="flex flex-wrap justify-between items-center mb-6 text-gray-600 font-bold gap-3">
+                    <div class="flex items-center gap-2">
+                       <span id="progress-text" class="bg-blue-100 px-4 py-2 rounded-full text-blue-800 whitespace-nowrap">進度: 1 / 25</span>
+                       <span id="lang-badge" class="px-4 py-2 rounded-full text-white whitespace-nowrap shadow-sm transition-colors duration-500 bg-indigo-500">🔤 英文挑戰</span>
+                    </div>
+                    
+                    <div class="flex items-center gap-3">
+                        <span class="bg-yellow-100 px-4 py-2 rounded-full flex items-center gap-2 text-yellow-800 shadow-sm font-mono text-lg min-w-[120px] justify-center border border-yellow-300">
+                            <i class="fa-regular fa-clock text-yellow-600"></i>
+                            時間: <span id="timer-text">0</span> 秒
+                        </span>
+                        <button onclick="showScreen('intro-screen')" class="bg-gray-100 hover:bg-gray-200 text-gray-600 px-4 py-2 rounded-full flex items-center gap-1 transition-colors text-sm shadow-sm border border-gray-200 font-bold" title="放棄重來">
+                            <i class="fa-solid fa-xmark"></i> 放棄
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 切換語言時特別提醒 -->
+                <div id="switch-alert" class="hidden bg-orange-100 border-l-4 border-orange-500 p-4 mb-4 rounded-r shadow-sm animate-pulse">
+                    <p class="text-orange-800 font-bold flex items-center gap-2">
+                        <i class="fa-solid fa-circle-exclamation text-xl"></i>
+                        注意囉！接下來換【中文】了！請按一下左下角的 Shift 鍵切換輸入法。
+                    </p>
+                </div>
+
+                <!-- 老師對話框 -->
+                <div class="flex items-start space-x-4 mb-8 bg-white p-4 rounded-2xl shadow-sm border-2 border-blue-100 animate-fade-in">
+                    <div class="bg-blue-100 p-3 rounded-full flex-shrink-0">
+                        <i class="fa-solid fa-face-smile text-3xl text-blue-600 w-10 h-10 flex items-center justify-center"></i>
+                    </div>
+                    <div class="flex-1 pt-2">
+                        <p id="teacher-message" class="text-gray-700 text-lg font-medium leading-relaxed"></p>
+                    </div>
+                </div>
+
+                <div class="bg-slate-100 p-4 md:p-8 rounded-3xl text-center mb-8 border-2 border-slate-200 shadow-inner relative flex flex-col items-center justify-center">
+                    
+                    <!-- 專屬童趣插圖 (Emoji) -->
+                    <div id="question-emoji" class="text-7xl md:text-8xl mb-2 animate-bounce-in drop-shadow-sm">🎯</div>
+                    
+                    <p class="text-gray-500 mb-2 font-medium text-lg">要打的字：</p>
+                    
+                    <!-- 目標文字顯示區 -->
+                    <div id="target-display" class="text-5xl md:text-6xl font-black text-blue-600 tracking-widest mb-4 break-words flex justify-center w-full"></div>
+                    
+                    <!-- 輸入區 -->
+                    <div class="relative w-full max-w-lg mb-6">
+                        <input type="text" id="type-input" class="w-full text-center bg-transparent outline-none text-4xl md:text-5xl text-gray-800 font-bold border-b-4 border-blue-400 focus:border-blue-600 transition-colors py-2 mb-2 placeholder-blue-300/30" placeholder=" " autocomplete="off" oninput="checkInput()" onblur="handleInputBlur()">
+                        
+                        <div id="cursor-hint" class="absolute inset-0 flex items-center justify-center pointer-events-none mb-2">
+                            <span class="w-1 h-12 bg-blue-400 animate-pulse rounded-full opacity-50"></span>
+                        </div>
+
+                        <!-- 即時錯誤警告 (防呆機制) -->
+                        <div id="warning-box" class="hidden absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-full border-2 px-4 py-3 rounded-xl shadow-lg flex items-center justify-center gap-2 animate-bounce-in z-20">
+                            <i class="fa-solid fa-circle-exclamation text-xl flex-shrink-0"></i>
+                            <p id="warning-text" class="font-bold text-lg"></p>
+                        </div>
+                    </div>
+
+                    <!-- ✨ 動態虛擬鍵盤指示器 ✨ -->
+                    <div id="virtual-keyboard" class="mt-4 flex flex-col gap-1 md:gap-1.5 select-none w-full max-w-3xl mx-auto bg-gray-200/40 p-2 md:p-4 rounded-2xl border-2 border-gray-300 overflow-x-auto no-scrollbar">
+                        <div class="flex justify-center gap-1 md:gap-1.5 min-w-max mx-auto">
+                            <div id="k-1" class="vk-key"><span class="vk-en">1</span><span class="vk-zh">ㄅ</span></div>
+                            <div id="k-2" class="vk-key"><span class="vk-en">2</span><span class="vk-zh">ㄉ</span></div>
+                            <div id="k-3" class="vk-key"><span class="vk-en">3</span><span class="vk-zh">ˇ</span></div>
+                            <div id="k-4" class="vk-key"><span class="vk-en">4</span><span class="vk-zh">ˋ</span></div>
+                            <div id="k-5" class="vk-key"><span class="vk-en">5</span><span class="vk-zh">ㄓ</span></div>
+                            <div id="k-6" class="vk-key"><span class="vk-en">6</span><span class="vk-zh">ˊ</span></div>
+                            <div id="k-7" class="vk-key"><span class="vk-en">7</span><span class="vk-zh">˙</span></div>
+                            <div id="k-8" class="vk-key"><span class="vk-en">8</span><span class="vk-zh">ㄚ</span></div>
+                            <div id="k-9" class="vk-key"><span class="vk-en">9</span><span class="vk-zh">ㄞ</span></div>
+                            <div id="k-0" class="vk-key"><span class="vk-en">0</span><span class="vk-zh">ㄢ</span></div>
+                            <div id="k--" class="vk-key"><span class="vk-en">-</span><span class="vk-zh">ㄦ</span></div>
+                        </div>
+                        <div class="flex justify-center gap-1 md:gap-1.5 ml-2 md:ml-6 min-w-max mx-auto">
+                            <div id="k-q" class="vk-key"><span class="vk-en">Q</span><span class="vk-zh">ㄆ</span></div>
+                            <div id="k-w" class="vk-key"><span class="vk-en">W</span><span class="vk-zh">ㄊ</span></div>
+                            <div id="k-e" class="vk-key"><span class="vk-en">E</span><span class="vk-zh">ㄍ</span></div>
+                            <div id="k-r" class="vk-key"><span class="vk-en">R</span><span class="vk-zh">ㄐ</span></div>
+                            <div id="k-t" class="vk-key"><span class="vk-en">T</span><span class="vk-zh">ㄔ</span></div>
+                            <div id="k-y" class="vk-key"><span class="vk-en">Y</span><span class="vk-zh">ㄗ</span></div>
+                            <div id="k-u" class="vk-key"><span class="vk-en">U</span><span class="vk-zh">ㄧ</span></div>
+                            <div id="k-i" class="vk-key"><span class="vk-en">I</span><span class="vk-zh">ㄛ</span></div>
+                            <div id="k-o" class="vk-key"><span class="vk-en">O</span><span class="vk-zh">ㄟ</span></div>
+                            <div id="k-p" class="vk-key"><span class="vk-en">P</span><span class="vk-zh">ㄣ</span></div>
+                            <div id="k-[" class="vk-key"><span class="vk-en">[</span><span class="vk-zh">ㄤ</span></div>
+                        </div>
+                        <div class="flex justify-center gap-1 md:gap-1.5 ml-4 md:ml-10 min-w-max mx-auto">
+                            <div id="k-a" class="vk-key"><span class="vk-en">A</span><span class="vk-zh">ㄇ</span></div>
+                            <div id="k-s" class="vk-key"><span class="vk-en">S</span><span class="vk-zh">ㄋ</span></div>
+                            <div id="k-d" class="vk-key"><span class="vk-en">D</span><span class="vk-zh">ㄎ</span></div>
+                            <div id="k-f" class="vk-key"><span class="vk-en">F</span><span class="vk-zh">ㄑ</span></div>
+                            <div id="k-g" class="vk-key"><span class="vk-en">G</span><span class="vk-zh">ㄕ</span></div>
+                            <div id="k-h" class="vk-key"><span class="vk-en">H</span><span class="vk-zh">ㄘ</span></div>
+                            <div id="k-j" class="vk-key"><span class="vk-en">J</span><span class="vk-zh">ㄨ</span></div>
+                            <div id="k-k" class="vk-key"><span class="vk-en">K</span><span class="vk-zh">ㄜ</span></div>
+                            <div id="k-l" class="vk-key"><span class="vk-en">L</span><span class="vk-zh">ㄠ</span></div>
+                            <div id="k-;" class="vk-key"><span class="vk-en">;</span><span class="vk-zh">ㄥ</span></div>
+                        </div>
+                        <div class="flex justify-center gap-1 md:gap-1.5 ml-8 md:ml-16 min-w-max mx-auto">
+                            <div id="k-z" class="vk-key"><span class="vk-en">Z</span><span class="vk-zh">ㄈ</span></div>
+                            <div id="k-x" class="vk-key"><span class="vk-en">X</span><span class="vk-zh">ㄌ</span></div>
+                            <div id="k-c" class="vk-key"><span class="vk-en">C</span><span class="vk-zh">ㄏ</span></div>
+                            <div id="k-v" class="vk-key"><span class="vk-en">V</span><span class="vk-zh">ㄒ</span></div>
+                            <div id="k-b" class="vk-key"><span class="vk-en">B</span><span class="vk-zh">ㄖ</span></div>
+                            <div id="k-n" class="vk-key"><span class="vk-en">N</span><span class="vk-zh">ㄙ</span></div>
+                            <div id="k-m" class="vk-key"><span class="vk-en">M</span><span class="vk-zh">ㄩ</span></div>
+                            <div id="k-," class="vk-key"><span class="vk-en">,</span><span class="vk-zh">ㄝ</span></div>
+                            <div id="k-." class="vk-key"><span class="vk-en">.</span><span class="vk-zh">ㄡ</span></div>
+                        </div>
+                        <div class="flex justify-center mt-1 md:mt-2 min-w-max mx-auto">
+                            <div id="k-space" class="vk-key" style="width: 180px;"><span class="text-sm font-bold text-gray-500">空白鍵 (Space)</span></div>
+                        </div>
+                    </div>
+
+                    <!-- 正確時的特效浮層 -->
+                    <div id="success-overlay" class="hidden absolute inset-0 flex items-center justify-center bg-white/90 rounded-3xl z-30 animate-fade-in backdrop-blur-sm">
+                        <div class="text-5xl font-black text-green-500 flex items-center gap-4 animate-bounce-in drop-shadow-md">
+                            <i class="fa-solid fa-star text-yellow-400"></i> 太棒了！ <i class="fa-solid fa-star text-yellow-400"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 老師的溫馨提示 (按鍵位置) -->
+                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-xl mb-4 flex items-start gap-3 shadow-sm">
+                    <i class="fa-solid fa-circle-info text-yellow-500 text-xl mt-0.5 flex-shrink-0"></i>
+                    <p id="key-hint" class="text-yellow-800 font-medium leading-relaxed"></p>
+                </div>
+            </div>
+
+            <!-- 畫面 5：遊戲結束畫面 (自動儲存成績) -->
+            <div id="finished-screen" class="screen-section animate-fade-in text-center py-8">
+                
+                <div class="text-6xl mb-6 animate-bounce">🎉🏆🎉</div>
+                
+                <h2 class="text-4xl font-black text-gray-800 mb-4">太厲害了！闖關成功！</h2>
+                <p class="text-xl text-gray-600 mb-2 font-medium"><span id="finish-student-name" class="text-blue-600 font-bold"></span>，你完成了 25 題挑戰！</p>
+                
+                <!-- 大大展示花費時間 -->
+                <div class="bg-yellow-100 rounded-3xl inline-block px-10 py-6 mb-6 shadow-inner border-4 border-yellow-300 transform hover:scale-105 transition-transform mt-4">
+                    <p class="text-2xl text-gray-800 font-bold mb-2">總共花費時間</p>
+                    <p class="text-blue-600 font-black text-6xl flex items-center justify-center gap-3">
+                        <i class="fa-regular fa-clock text-yellow-600 text-4xl"></i>
+                        <span id="final-time">0</span> <span class="text-3xl text-gray-600 mt-3">秒</span>
+                    </p>
+                </div>
+
+                <!-- 自動儲存提示區塊 -->
+                <div id="auto-save-status" class="bg-blue-50 border-2 border-blue-200 text-blue-800 p-4 rounded-2xl max-w-md mx-auto shadow-sm font-bold text-lg mb-6 flex flex-col items-center justify-center gap-2">
+                    <i class="fa-solid fa-spinner fa-spin text-blue-500 text-2xl"></i> 成績自動上傳中...
+                </div>
+                
+                <div class="mt-4 flex justify-center gap-4">
+                    <button onclick="showLeaderboard()" class="px-6 py-3 bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-bold rounded-2xl shadow-lg transition-all hover:scale-105 text-lg flex items-center gap-2">
+                        <i class="fa-solid fa-trophy"></i> 查看排行榜
+                    </button>
+                    <button onclick="showScreen('intro-screen')" class="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded-2xl shadow-lg transition-all hover:scale-105 text-lg flex items-center gap-2">
+                        <i class="fa-solid fa-rotate-right"></i> 再玩一次
+                    </button>
+                </div>
+            </div>
+
+            <!-- 畫面 6：學生公開排行榜畫面 -->
+            <div id="leaderboard-screen" class="screen-section animate-fade-in py-4">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-3xl font-black text-yellow-600 flex items-center gap-3">
+                        <i class="fa-solid fa-crown"></i> 英雄排行榜
+                    </h2>
+                    <button onclick="showScreen('intro-screen')" class="text-gray-500 hover:text-gray-700 bg-gray-100 px-4 py-2 rounded-full font-bold transition-colors">
+                        <i class="fa-solid fa-arrow-left"></i> 返回選單
+                    </button>
+                </div>
+
+                <!-- 排行榜分類 Tab -->
+                <div class="flex justify-center gap-2 mb-6 bg-slate-100 p-2 rounded-2xl shadow-inner">
+                    <button onclick="switchLeaderboardTab('easy')" id="tab-easy" class="flex-1 py-2 px-4 rounded-xl font-bold transition-colors bg-white shadow text-yellow-600 border border-gray-200">🌱 新手</button>
+                    <button onclick="switchLeaderboardTab('medium')" id="tab-medium" class="flex-1 py-2 px-4 rounded-xl font-bold transition-colors text-gray-500 hover:bg-gray-200 border border-transparent">⭐ 進階</button>
+                    <button onclick="switchLeaderboardTab('hard')" id="tab-hard" class="flex-1 py-2 px-4 rounded-xl font-bold transition-colors text-gray-500 hover:bg-gray-200 border border-transparent">🚀 高手</button>
+                </div>
+
+                <div class="bg-white border-2 border-yellow-200 rounded-2xl shadow-md overflow-hidden">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-yellow-50 text-yellow-800 border-b-2 border-yellow-200">
+                                <th class="py-4 px-6 font-black text-center w-24">名次</th>
+                                <th class="py-4 px-6 font-black">班級座號</th>
+                                <th class="py-4 px-6 font-black text-right">花費時間</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboard-body">
+                            <!-- JS 動態填入 -->
+                            <tr><td colspan="3" class="text-center py-10 text-gray-400 font-medium"><i class="fa-solid fa-spinner fa-spin mr-2"></i> 讀取資料中...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 畫面 7：教師專屬後台畫面 (顯示所有學生) -->
+            <div id="teacher-dashboard-screen" class="screen-section animate-fade-in py-4">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-3xl font-black text-gray-700 flex items-center gap-3">
+                        <i class="fa-solid fa-chalkboard-user"></i> 教師即時管理後台
+                    </h2>
+                    <button onclick="logoutTeacher()" class="text-red-500 hover:text-red-700 bg-red-50 px-4 py-2 rounded-full font-bold transition-colors border border-red-200">
+                        <i class="fa-solid fa-right-from-bracket"></i> 登出後台
+                    </button>
+                </div>
+
+                <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6 rounded-r-xl text-blue-800 font-medium flex justify-between items-center shadow-sm">
+                    <div>
+                        <i class="fa-solid fa-circle-info mr-2"></i> 這裡會顯示「所有學生」的最佳成績，且畫面會 <strong>自動即時更新</strong>，老師不需手動重新整理喔！
+                    </div>
+                    <span class="text-xs bg-blue-200 px-2 py-1 rounded text-blue-700 animate-pulse border border-blue-300">Live 同步中</span>
+                </div>
+
+                <div class="flex justify-center gap-2 mb-6 bg-slate-100 p-2 rounded-2xl shadow-inner">
+                    <button onclick="switchTeacherTab('easy')" id="t-tab-easy" class="flex-1 py-2 px-4 rounded-xl font-bold transition-colors bg-white shadow text-gray-800 border border-gray-200">🌱 新手成績</button>
+                    <button onclick="switchTeacherTab('medium')" id="t-tab-medium" class="flex-1 py-2 px-4 rounded-xl font-bold transition-colors text-gray-500 hover:bg-gray-200 border border-transparent">⭐ 進階成績</button>
+                    <button onclick="switchTeacherTab('hard')" id="t-tab-hard" class="flex-1 py-2 px-4 rounded-xl font-bold transition-colors text-gray-500 hover:bg-gray-200 border border-transparent">🚀 高手成績</button>
+                </div>
+
+                <div class="bg-white border-2 border-gray-200 rounded-2xl shadow-md overflow-hidden">
+                    <div class="max-h-[500px] overflow-y-auto">
+                        <table class="w-full text-left border-collapse relative">
+                            <thead class="sticky top-0 bg-gray-100 shadow-sm z-10">
+                                <tr class="text-gray-700 border-b-2 border-gray-300">
+                                    <th class="py-3 px-6 font-black text-center w-16">#</th>
+                                    <th class="py-3 px-6 font-black">班級座號</th>
+                                    <th class="py-3 px-6 font-black text-right">最佳時間</th>
+                                    <th class="py-3 px-6 font-black text-right text-sm text-gray-500">完成時間</th>
+                                </tr>
+                            </thead>
+                            <tbody id="teacher-dashboard-body">
+                                <!-- JS 動態填入 -->
+                                <tr><td colspan="4" class="text-center py-10 text-gray-400 font-medium"><i class="fa-solid fa-spinner fa-spin mr-2"></i> 讀取資料中...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Firebase SDK (模組化) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // =========================================================================
+        // 🌟 自動連線設定：使用老師的專屬 Firebase 設定 🌟
+        // =========================================================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyDBLFK7T2ewIk4qgvlBz9hfQuxEALLUezQ",
+            authDomain: "typing-game-755a8.firebaseapp.com",
+            projectId: "typing-game-755a8",
+            storageBucket: "typing-game-755a8.firebasestorage.app",
+            messagingSenderId: "938096537906",
+            appId: "1:938096537906:web:781dd1e9c4d194bacb272b",
+            measurementId: "G-3GELY1R4WK"
+        };
+        const GAME_APP_ID = "donghu-typing-game"; // 固定作為資料庫集合路徑的辨識
+        // =========================================================================
+
+        // 全域應用狀態
+        window.currentGameState = 'login-screen'; 
+        window.currentDifficulty = null;
+        let questions = [];
+        let currentQIndex = 0;
+        let startTime = null;
+        let timerInterval = null;
+        let elapsedTime = 0;
+        let isTransitioning = false;
+
+        // 學生身分
+        window.studentInfo = { classCode: '', seatCode: '' };
+
+        // Firebase 變數
+        let auth, db, user;
+        window.allScoresData = []; // 存放所有成績
+        window.currentLeaderboardTab = 'easy';
+        window.currentTeacherTab = 'easy';
+
+        // --- 虛擬鍵盤按鍵映射表 ---
+        const symbolToKey = {
+            'a':'k-a', 'b':'k-b', 'c':'k-c', 'd':'k-d', 'e':'k-e', 'f':'k-f', 'g':'k-g', 'h':'k-h', 'i':'k-i', 'j':'k-j', 'k':'k-k', 'l':'k-l', 'm':'k-m', 'n':'k-n', 'o':'k-o', 'p':'k-p', 'q':'k-q', 'r':'k-r', 's':'k-s', 't':'k-t', 'u':'k-u', 'v':'k-v', 'w':'k-w', 'x':'k-x', 'y':'k-y', 'z':'k-z',
+            'ㄅ':'k-1', 'ㄆ':'k-q', 'ㄇ':'k-a', 'ㄈ':'k-z', 'ㄉ':'k-2', 'ㄊ':'k-w', 'ㄋ':'k-s', 'ㄌ':'k-x', 'ㄍ':'k-e', 'ㄎ':'k-d', 'ㄏ':'k-c', 'ㄐ':'k-r', 'ㄑ':'k-f', 'ㄒ':'k-v', 'ㄓ':'k-5', 'ㄔ':'k-t', 'ㄕ':'k-g', 'ㄖ':'k-b', 'ㄗ':'k-y', 'ㄘ':'k-h', 'ㄙ':'k-n', 'ㄧ':'k-u', 'ㄨ':'k-j', 'ㄩ':'k-m', 'ㄚ':'k-8', 'ㄛ':'k-i', 'ㄜ':'k-k', 'ㄝ':'k-,', 'ㄞ':'k-9', 'ㄟ':'k-o', 'ㄠ':'k-l', 'ㄡ':'k-.', 'ㄢ':'k-0', 'ㄣ':'k-p', 'ㄤ':'k-[', 'ㄥ':'k-;', 'ㄦ':'k--', 'ˇ':'k-3', 'ˋ':'k-4', 'ˊ':'k-6', '˙':'k-space', ' ':'k-space'
+        };
+
+        // --- 題庫資料 ---
+        const questionPools = {
+            easy: {
+                en: [
+                    { target: 'f', hint: 'f 鍵在左手食指放的家喔！', emoji: '👆' },
+                    { target: 'j', hint: 'j 鍵是右手食指的家！', emoji: '👇' },
+                    { target: 'a', hint: 'a 鍵在左手小指放的地方喔！', emoji: '🍎' },
+                    { target: 's', hint: 's 鍵在左手無名指放的地方喔！', emoji: '🐍' },
+                    { target: 'd', hint: 'd 鍵在左手中指放的地方喔！', emoji: '🐶' },
+                    { target: 'k', hint: 'k 鍵在右手中指放的地方喔！', emoji: '🪁' },
+                    { target: 'l', hint: 'l 鍵在右手無名指放的地方喔！', emoji: '🍋' },
+                    { target: 'q', hint: 'q 在 a 的上面。', emoji: '👑' },
+                    { target: 'w', hint: 'w 在 s 的上面。', emoji: '🍉' },
+                    { target: 'e', hint: 'e 在 d 的上面。', emoji: '🐘' },
+                    { target: 'm', hint: 'm 鍵在右手食指往下按。 (Minecraft 的 M)', emoji: '⛏️' },
+                    { target: 'c', hint: 'c 鍵在左手中指往下按。 (Creeper 的 C)', emoji: '💥' },
+                    { target: 'p', hint: 'p 鍵在右手小指往上按。 (Pokemon 的 P)', emoji: '🔴' },
+                    { target: 'r', hint: 'r 鍵在 f 鍵的上面喔！', emoji: '🚀' },
+                    { target: 't', hint: 't 鍵在 f 鍵的右上方。', emoji: '🐢' },
+                    { target: 'y', hint: 'y 鍵在 j 鍵的左上方。', emoji: '🪀' },
+                    { target: 'u', hint: 'u 鍵在 j 鍵的上面喔！', emoji: '☂️' },
+                    { target: 'i', hint: 'i 鍵在 k 鍵的上面喔！', emoji: '🍦' },
+                    { target: 'o', hint: 'o 鍵在 l 鍵的上面喔！', emoji: '🐙' },
+                    { target: 'b', hint: 'b 鍵在 f 鍵往右下的地方。', emoji: '🐻' }
+                ],
+                zh: [
+                    { target: 'ㄅ', hint: 'ㄅ在鍵盤左上角喔！', emoji: '🍞' },
+                    { target: 'ㄆ', hint: 'ㄆ在 q 的位置。', emoji: '🍇' },
+                    { target: 'ㄇ', hint: 'ㄇ在 a 鍵的上面喔！', emoji: '🐱' },
+                    { target: 'ㄈ', hint: 'ㄈ在 z 的位置。', emoji: '🚁' },
+                    { target: 'ㄉ', hint: 'ㄉ在數字 2 的位置。', emoji: '🎂' },
+                    { target: 'ㄊ', hint: 'ㄊ在 w 的位置。', emoji: '🍑' },
+                    { target: 'ㄋ', hint: 'ㄋ在 s 的位置。', emoji: '🐦' },
+                    { target: 'ㄌ', hint: 'ㄌ在 x 的位置。', emoji: '🎁' },
+                    { target: 'ㄍ', hint: 'ㄍ在 e 的位置。', emoji: '🐶' },
+                    { target: 'ㄎ', hint: 'ㄎ在 d 的位置。', emoji: '👖' },
+                    { target: 'ㄏ', hint: 'ㄏ在 c 的位置。', emoji: '🐵' },
+                    { target: 'ㄐ', hint: 'ㄐ在 r 的位置。', emoji: '🐔' },
+                    { target: 'ㄑ', hint: 'ㄑ在 f 的位置。', emoji: '🐧' },
+                    { target: 'ㄒ', hint: 'ㄒ在 v 的位置。', emoji: '🍉' },
+                    { target: 'ㄓ', hint: 'ㄓ在 5 的位置喔！', emoji: '🕷️' },
+                    { target: 'ㄔ', hint: 'ㄔ在 t 的位置。', emoji: '🚗' },
+                    { target: 'ㄕ', hint: 'ㄕ在 g 的位置。', emoji: '🦁' },
+                    { target: 'ㄖ', hint: 'ㄖ在 b 的位置。', emoji: '🌞' }
+                ]
+            },
+            medium: {
+                en: [
+                    { target: 'cat', hint: '小貓的英文。慢慢打喔！', emoji: '🐱' },
+                    { target: 'dog', hint: '小狗的英文。', emoji: '🐶' },
+                    { target: 'pig', hint: '小豬的英文。', emoji: '🐷' },
+                    { target: 'cow', hint: '乳牛的英文。', emoji: '🐮' },
+                    { target: 'sun', hint: '太陽的英文。', emoji: '☀️' },
+                    { target: 'moon', hint: '月亮的英文。', emoji: '🌙' },
+                    { target: 'star', hint: '星星的英文。', emoji: '⭐' },
+                    { target: 'sky', hint: '天空的英文。', emoji: '☁️' },
+                    { target: 'tree', hint: '樹的英文。', emoji: '🌳' },
+                    { target: 'book', hint: '書的英文。', emoji: '📖' },
+                    { target: 'bird', hint: '小鳥的英文。', emoji: '🐦' },
+                    { target: 'fish', hint: '魚的英文。', emoji: '🐟' },
+                    { target: 'zombie', hint: '殭屍的英文！(麥塊裡的怪物)', emoji: '🧟' },
+                    { target: 'steve', hint: '史蒂夫的英文！(麥塊的主角)', emoji: '🧍' },
+                    { target: 'sword', hint: '劍的英文。(鑽石劍！)', emoji: '🗡️' },
+                    { target: 'block', hint: '方塊的英文。', emoji: '🧱' },
+                    { target: 'mario', hint: '瑪利歐的英文。', emoji: '🍄' },
+                    { target: 'kirby', hint: '星之卡比的英文。', emoji: '🌟' },
+                    { target: 'blue', hint: '藍色的英文。', emoji: '🔵' },
+                    { target: 'red', hint: '紅色的英文。', emoji: '🔴' }
+                ],
+                zh: [
+                    { target: '小貓', zhuyin: ['ㄒㄧㄠˇ', 'ㄇㄠ'], hint: '小(ㄒㄧㄠˇ)，貓(ㄇㄠ)。', emoji: '🐱' },
+                    { target: '小狗', zhuyin: ['ㄒㄧㄠˇ', 'ㄍㄡˇ'], hint: '小(ㄒㄧㄠˇ)，狗(ㄍㄡˇ)。', emoji: '🐶' },
+                    { target: '你好', zhuyin: ['ㄋㄧˇ', 'ㄏㄠˇ'], hint: '你(ㄋㄧˇ)，好(ㄏㄠˇ)。', emoji: '👋' },
+                    { target: '早安', zhuyin: ['ㄗㄠˇ', 'ㄢ'], hint: '每天早上都要有精神地說喔！', emoji: '🌅' },
+                    { target: '午安', zhuyin: ['ㄨˇ', 'ㄢ'], hint: '中午吃飽飯可以說。', emoji: '☀️' },
+                    { target: '晚安', zhuyin: ['ㄨㄢˇ', 'ㄢ'], hint: '睡覺前跟爸爸媽媽說。', emoji: '🌛' },
+                    { target: '謝謝', zhuyin: ['ㄒㄧㄝˋ', 'ㄒㄧㄝ˙'], hint: '別人幫忙你要記得說喔！', emoji: '🙏' },
+                    { target: '對不起', zhuyin: ['ㄉㄨㄟˋ', 'ㄅㄨˋ', 'ㄑㄧˇ'], hint: '做錯事勇敢道歉最棒了。', emoji: '🙇' },
+                    { target: '麥塊', zhuyin: ['ㄇㄞˋ', 'ㄎㄨㄞˋ'], hint: 'Minecraft 的中文！', emoji: '🧱' },
+                    { target: '創世神', zhuyin: ['ㄔㄨㄤˋ', 'ㄕˋ', 'ㄕㄣˊ'], hint: '麥塊的另一個名字。', emoji: '⛏️' },
+                    { target: '苦力怕', zhuyin: ['ㄎㄨˇ', 'ㄌㄧˋ', 'ㄆㄚˋ'], hint: '嘶嘶嘶... 砰！小心綠色怪物。', emoji: '💥' },
+                    { target: '大耳狗', zhuyin: ['ㄉㄚˋ', 'ㄦˇ', 'ㄍㄡˇ'], hint: '軟綿綿超可愛的喜拿！', emoji: '☁️' },
+                    { target: '寶可夢', zhuyin: ['ㄅㄠˇ', 'ㄎㄜˇ', 'ㄇㄥˋ'], hint: '去吧！就決定是你了！', emoji: '🔴' },
+                    { target: '皮卡丘', zhuyin: ['ㄆㄧˊ', 'ㄎㄚˇ', 'ㄑㄧㄡ'], hint: '黃色的電擊小精靈。', emoji: '⚡' },
+                    { target: '安妮亞', zhuyin: ['ㄢ', 'ㄋㄧˊ', 'ㄧㄚˋ'], hint: '哇酷哇酷！(間諜家家酒)', emoji: '🥜' },
+                    { target: '馬力歐', zhuyin: ['ㄇㄚˇ', 'ㄌㄧˋ', 'ㄡ'], hint: '穿紅色吊帶褲的水管工。', emoji: '🍄' },
+                    { target: '蘋果', zhuyin: ['ㄆㄧㄥˊ', 'ㄍㄨㄛˇ'], hint: '紅紅的蘋果。', emoji: '🍎' },
+                    { target: '香蕉', zhuyin: ['ㄒㄧㄤ', 'ㄐㄧㄠ'], hint: '彎彎的香蕉。', emoji: '🍌' },
+                    { target: '老師', zhuyin: ['ㄌㄠˇ', 'ㄕ'], hint: '要認真上課喔！', emoji: '👩‍🏫' },
+                    { target: '遊戲', zhuyin: ['ㄧㄡˊ', 'ㄒㄧˋ'], hint: '打完字就可以玩囉！', emoji: '🎮' }
+                ]
+            },
+            hard: {
+                en: [
+                    { target: 'hello', hint: 'h 在右手食指往左。', emoji: '👋' },
+                    { target: 'world', hint: 'w 在左手無名指往上。', emoji: '🌍' },
+                    { target: 'morning', hint: '早安的英文，m-o-r-n-i-n-g。', emoji: '🌅' },
+                    { target: 'school', hint: '學校的英文。s-c-h-o-o-l。', emoji: '🏫' },
+                    { target: 'teacher', hint: '老師的英文。t-e-a-c-h-e-r。', emoji: '👩‍🏫' },
+                    { target: 'student', hint: '學生的英文。s-t-u-d-e-n-t。', emoji: '🎒' },
+                    { target: 'friend', hint: '朋友的英文。f-r-i-e-n-d。', emoji: '🤝' },
+                    { target: 'minecraft', hint: '大家最愛的麥塊英文原名！', emoji: '⛏️' },
+                    { target: 'creeper', hint: '苦力怕的英文，會爆炸喔！', emoji: '💥' },
+                    { target: 'pokemon', hint: '寶可夢的英文原名！', emoji: '🔴' },
+                    { target: 'pikachu', hint: '皮卡丘的英文名。', emoji: '⚡' },
+                    { target: 'cinnamoroll', hint: '大耳狗(喜拿)的英文名，挑戰長單字！', emoji: '☁️' },
+                    { target: 'nintendo', hint: '任天堂的英文。', emoji: '🎮' },
+                    { target: 'animal', hint: '動物的英文。', emoji: '🐾' },
+                    { target: 'crossing', hint: '動森的後半部單字。', emoji: '🏝️' },
+                    { target: 'diamond', hint: '鑽石的英文 (麥塊裡的珍貴礦石)。', emoji: '💎' },
+                    { target: 'roblox', hint: '機器磚塊的英文。', emoji: '🤖' },
+                    { target: 'spyfamily', hint: '間諜家家酒的英文。', emoji: '🕵️' },
+                    { target: 'beautiful', hint: '美麗的英文。', emoji: '✨' },
+                    { target: 'computer', hint: '電腦的英文。', emoji: '💻' }
+                ],
+                zh: [
+                    { target: '我愛你', zhuyin: ['ㄨㄛˇ', 'ㄞˋ', 'ㄋㄧˇ'], hint: '這是一句很溫暖的話喔！', emoji: '❤️' },
+                    { target: '你好嗎', zhuyin: ['ㄋㄧˇ', 'ㄏㄠˇ', 'ㄇㄚ˙'], hint: '關心別人的問候。', emoji: '❓' },
+                    { target: '大家早安', zhuyin: ['ㄉㄚˋ', 'ㄐㄧㄚ', 'ㄗㄠˇ', 'ㄢ'], hint: '早上有精神的問候。', emoji: '🌅' },
+                    { target: '今天天氣很好', zhuyin: ['ㄐㄧㄣ', 'ㄊㄧㄢ', 'ㄊㄧㄢ', 'ㄑㄧˋ', 'ㄏㄣˇ', 'ㄏㄠˇ'], hint: '適合出去玩的好日子！', emoji: '☀️' },
+                    { target: '一起出去玩', zhuyin: ['ㄧˋ', 'ㄑㄧˇ', 'ㄔㄨ', 'ㄑㄩˋ', 'ㄨㄢˊ'], hint: '邀朋友一起玩耍。', emoji: '🏃' },
+                    { target: '電腦真有趣', zhuyin: ['ㄉㄧㄢˋ', 'ㄋㄠˇ', 'ㄓㄣ', 'ㄧㄡˇ', 'ㄑㄩˋ'], hint: '學電腦可以做很多事。', emoji: '💻' },
+                    { target: '我是打字高手', zhuyin: ['ㄨㄛˇ', 'ㄕˋ', 'ㄉㄚˇ', 'ㄗˋ', 'ㄍㄠ', 'ㄕㄡˇ'], hint: '打完這題你就是高手啦！', emoji: '⌨️' },
+                    { target: '我喜歡玩麥塊', zhuyin: ['ㄨㄛˇ', 'ㄒㄧˇ', 'ㄏㄨㄢ', 'ㄨㄢˊ', 'ㄇㄞˋ', 'ㄎㄨㄞˋ'], hint: '蓋出你的夢想房子吧！', emoji: '⛏️' },
+                    { target: '鑽石劍很厲害', zhuyin: ['ㄗㄨㄢˋ', 'ㄕˊ', 'ㄐㄧㄢˋ', 'ㄏㄣˇ', 'ㄌㄧˋ', 'ㄏㄞˋ'], hint: '打怪最強的武器！', emoji: '🗡️' },
+                    { target: '大耳狗好可愛', zhuyin: ['ㄉㄚˋ', 'ㄦˇ', 'ㄍㄡˇ', 'ㄏㄠˇ', 'ㄎㄜˇ', 'ㄞˋ'], hint: '毛茸茸的白色小狗。', emoji: '☁️' },
+                    { target: '抓到寶可夢了', zhuyin: ['ㄓㄨㄚ', 'ㄉㄠˋ', 'ㄅㄠˇ', 'ㄎㄜˇ', 'ㄇㄥˋ', 'ㄌㄜ˙'], hint: '丟出精靈球！', emoji: '🔴' },
+                    { target: '皮卡丘十萬伏特', zhuyin: ['ㄆㄧˊ', 'ㄎㄚˇ', 'ㄑㄧㄡ', 'ㄕˊ', 'ㄨㄢˋ', 'ㄈㄨˊ', 'ㄊㄜˋ'], hint: '皮卡~~~丘！！！', emoji: '⚡' },
+                    { target: '苦力怕爆炸了', zhuyin: ['ㄎㄨˇ', 'ㄌㄧˋ', 'ㄆㄚˋ', 'ㄅㄠˋ', 'ㄓㄚˋ', 'ㄌㄜ˙'], hint: '快逃啊！房子要被炸壞了！', emoji: '💥' },
+                    { target: '我們一起蓋房子', zhuyin: ['ㄨㄛˇ', 'ㄇㄣ˙', 'ㄧˋ', 'ㄑㄧˇ', 'ㄍㄞˋ', 'ㄈㄤˊ', 'ㄗ˙'], hint: '合作完成大工程。', emoji: '🧱' },
+                    { target: '生日快樂', zhuyin: ['ㄕㄥ', 'ㄖˋ', 'ㄎㄨㄞˋ', 'ㄌㄜˋ'], hint: '祝你生日快樂！', emoji: '🎂' },
+                    { target: '謝謝老師', zhuyin: ['ㄒㄧㄝˋ', 'ㄒㄧㄝ˙', 'ㄌㄠˇ', 'ㄕ'], hint: '記得感謝教導你的老師喔！', emoji: '👩‍🏫' },
+                    { target: '間諜家家酒', zhuyin: ['ㄐㄧㄢˋ', 'ㄉㄧㄝˊ', 'ㄐㄧㄚ', 'ㄐㄧㄚ', 'ㄐㄧㄡˇ'], hint: '哇酷哇酷！', emoji: '🥜' },
+                    { target: '星之卡比', zhuyin: ['ㄒㄧㄥ', 'ㄓ', 'ㄎㄚˇ', 'ㄅㄧˇ'], hint: '粉紅色圓滾滾的。', emoji: '⭐' }
+                ]
+            }
+        };
+
+        // --- DOM 快取 ---
+        const screens = {
+            'login-screen': document.getElementById('login-screen'),
+            'teacher-login-screen': document.getElementById('teacher-login-screen'),
+            'intro-screen': document.getElementById('intro-screen'),
+            'playing-screen': document.getElementById('playing-screen'),
+            'finished-screen': document.getElementById('finished-screen'),
+            'leaderboard-screen': document.getElementById('leaderboard-screen'),
+            'teacher-dashboard-screen': document.getElementById('teacher-dashboard-screen')
+        };
+        const typeInput = document.getElementById('type-input');
+        const timerText = document.getElementById('timer-text');
+
+        // --- Firebase 初始化與資料監聽 ---
+        async function initFirebase() {
+            try {
+                // 直接使用老師提供的配置
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                // 強制使用匿名登入
+                try {
+                    await signInAnonymously(auth);
+                } catch (authErr) {
+                    console.error("匿名登入失敗:", authErr);
+                    alert("⚠️ 系統無法連線至資料庫！\n請確認您的 Firebase 控制台已啟用「匿名登入 (Anonymous)」。");
+                }
+
+                onAuthStateChanged(auth, (u) => {
+                    user = u;
+                    if (user) {
+                        setupDatabaseListener(); 
+                    }
+                });
+            } catch (err) {
+                console.error("Firebase 初始化失敗:", err);
+            }
+        }
+
+        // ✨ 核心功能：即時監聽資料庫 (onSnapshot) ✨
+        function setupDatabaseListener() {
+            if (!db || !user) return;
+            // 嚴格遵守 Firebase 規則路徑： artifacts/donghu-typing-game/public/data/typing_scores
+            const scoresRef = collection(db, 'artifacts', GAME_APP_ID, 'public', 'data', 'typing_scores');
+            
+            // 只要有人新增成績，這裡就會瞬間觸發！
+            onSnapshot(scoresRef, (snapshot) => {
+                window.allScoresData = [];
+                snapshot.forEach(doc => {
+                    window.allScoresData.push(doc.data());
+                });
+                
+                // 如果畫面正好停在排行榜或後台，就馬上重新渲染
+                if (window.currentGameState === 'leaderboard-screen') {
+                    renderLeaderboard();
+                } else if (window.currentGameState === 'teacher-dashboard-screen') {
+                    renderTeacherDashboard();
+                }
+            }, (error) => {
+                console.error("資料讀取錯誤:", error);
+            });
+        }
+
+        // --- 畫面切換通用函式 ---
+        window.showScreen = function(screenId) {
+            Object.values(screens).forEach(s => {
+                if (s) s.style.display = 'none';
+            });
+            if (screens[screenId]) {
+                screens[screenId].style.display = 'block';
+            }
+            window.currentGameState = screenId;
+            
+            if (screenId === 'playing-screen' && typeInput) {
+                setTimeout(() => typeInput.focus(), 100);
+            }
+            
+            // 如果切換到需要讀取資料的畫面，立即觸發一次渲染
+            if (screenId === 'leaderboard-screen') renderLeaderboard();
+            if (screenId === 'teacher-dashboard-screen') renderTeacherDashboard();
+        }
+
+        // --- 登入邏輯 ---
+        window.loginStudent = function() {
+            const cInput = document.getElementById('login-class').value.trim();
+            const sInput = document.getElementById('login-seat').value.trim();
+            const err = document.getElementById('login-error');
+
+            if (!cInput || !sInput) {
+                if(err) err.classList.remove('hidden');
+                return;
+            }
+            
+            // 儲存學生資訊
+            window.studentInfo.classCode = cInput;
+            window.studentInfo.seatCode = sInput;
+            
+            const welcomeEl = document.getElementById('welcome-student-name');
+            if(welcomeEl) welcomeEl.innerText = `${cInput} 班 ${sInput} 號`;
+            
+            if(err) err.classList.add('hidden');
+            showScreen('intro-screen');
+        };
+
+        window.logoutStudent = function() {
+            window.studentInfo = { classCode: '', seatCode: '' };
+            const cInput = document.getElementById('login-class');
+            const sInput = document.getElementById('login-seat');
+            if (cInput) cInput.value = '';
+            if (sInput) sInput.value = '';
+            showScreen('login-screen');
+        };
+
+        window.loginTeacher = function() {
+            const pwdInput = document.getElementById('teacher-password');
+            const err = document.getElementById('teacher-login-error');
+            const pwd = pwdInput ? pwdInput.value : '';
+            
+            if (pwd === "0316") {
+                if(err) err.classList.add('hidden');
+                if(pwdInput) pwdInput.value = '';
+                showScreen('teacher-dashboard-screen');
+            } else {
+                if(err) err.classList.remove('hidden');
+            }
+        };
+
+        window.logoutTeacher = function() {
+            showScreen('login-screen');
+        };
+
+        function getRandomItems(array, count) {
+            const shuffled = [...array].sort(() => 0.5 - Math.random());
+            return shuffled.slice(0, count);
+        }
+
+        // --- 遊戲邏輯 ---
+        window.startGame = function(level) {
+            const enList = getRandomItems(questionPools[level].en, 13).map(q => ({ ...q, lang: 'en' }));
+            const zhList = getRandomItems(questionPools[level].zh, 12).map(q => ({ ...q, lang: 'zh' }));
+            
+            window.currentDifficulty = level;
+            questions = [...enList, ...zhList];
+            
+            initGameSession();
+        };
+
+        function initGameSession() {
+            currentQIndex = 0;
+            elapsedTime = 0;
+            isTransitioning = false;
+            
+            renderQuestion();
+            startTimer();
+            showScreen('playing-screen');
+        }
+
+        function renderQuestion() {
+            if (currentQIndex >= questions.length) return;
+            
+            const q = questions[currentQIndex];
+            const prevQ = currentQIndex > 0 ? questions[currentQIndex - 1] : null;
+
+            // 切換虛擬鍵盤字體模式
+            const vk = document.getElementById('virtual-keyboard');
+            if (vk) {
+                if (q.lang === 'en') {
+                    vk.classList.remove('mode-zh');
+                    vk.classList.add('mode-en');
+                } else {
+                    vk.classList.remove('mode-en');
+                    vk.classList.add('mode-zh');
+                }
+            }
+            
+            // 進度與模式 Badge
+            const progressTextEl = document.getElementById('progress-text');
+            if (progressTextEl) progressTextEl.innerText = `進度: ${currentQIndex + 1} / ${questions.length}`;
+
+            const badge = document.getElementById('lang-badge');
+            if (badge) {
+                if (q.lang === 'en') {
+                    badge.className = "px-4 py-2 rounded-full text-white whitespace-nowrap shadow-sm transition-colors duration-500 bg-indigo-500";
+                    badge.innerText = '🔤 英文挑戰';
+                } else {
+                    badge.className = "px-4 py-2 rounded-full text-white whitespace-nowrap shadow-sm transition-colors duration-500 bg-emerald-500";
+                    badge.innerText = '🇹🇼 中文挑戰';
+                }
+            }
+
+            // 切換語言提醒
+            const switchAlert = document.getElementById('switch-alert');
+            if (switchAlert) {
+                if (currentQIndex > 0 && q.lang === 'zh' && prevQ && prevQ.lang === 'en') {
+                    switchAlert.classList.remove('hidden');
+                } else {
+                    switchAlert.classList.add('hidden');
+                }
+            }
+
+            // 老師對話
+            let teacherMsg = "";
+            if (currentQIndex === 0 && q.lang === 'en') {
+                teacherMsg = "現在是【英文】模式喔！如果打出注音，請按一下 Shift 鍵切換。";
+            } else if (q.lang === 'zh' && prevQ && prevQ.lang === 'en') {
+                teacherMsg = "準備切換囉！現在要打【中文】了，請按一下鍵盤上的 Shift 鍵切換輸入法。";
+            } else {
+                teacherMsg = q.lang === 'en' ? "保持【英文】模式，繼續加油！" : "保持【中文】模式喔！";
+            }
+            
+            const teacherMessageEl = document.getElementById('teacher-message');
+            if (teacherMessageEl) teacherMessageEl.innerText = teacherMsg;
+
+            // 顯示 Emoji
+            const emojiEl = document.getElementById('question-emoji');
+            if (emojiEl) emojiEl.innerText = q.emoji || '🎯';
+
+            // 渲染目標文字
+            const targetDisplay = document.getElementById('target-display');
+            if (targetDisplay) {
+                targetDisplay.innerHTML = '';
+                
+                if (q.lang === 'zh' && q.zhuyin) {
+                    const container = document.createElement('div');
+                    container.className = "flex gap-2 md:gap-4";
+                    q.target.split('').forEach((char, index) => {
+                        const charDiv = document.createElement('div');
+                        charDiv.className = "flex flex-col items-center";
+                        charDiv.innerHTML = `
+                            <span class="text-2xl md:text-3xl text-blue-400 font-bold mb-1 tracking-normal">${q.zhuyin[index] || ''}</span>
+                            <span class="tracking-normal">${char}</span>
+                        `;
+                        container.appendChild(charDiv);
+                    });
+                    targetDisplay.appendChild(container);
+                    if (typeInput) typeInput.classList.remove('font-handwriting');
+                } else {
+                    const span = document.createElement('span');
+                    span.innerText = q.target;
+                    if (q.lang === 'en') {
+                        span.className = "font-handwriting";
+                        if (typeInput) typeInput.classList.add('font-handwriting');
+                    } else {
+                        if (typeInput) typeInput.classList.remove('font-handwriting');
+                    }
+                    targetDisplay.appendChild(span);
+                }
+            }
+
+            // 提示文字
+            const keyHintEl = document.getElementById('key-hint');
+            if (keyHintEl) keyHintEl.innerText = q.hint;
+
+            // 重置輸入
+            if (typeInput) {
+                typeInput.value = '';
+                typeInput.disabled = false;
+            }
+            
+            hideWarning();
+            const successOverlay = document.getElementById('success-overlay');
+            if (successOverlay) successOverlay.classList.add('hidden');
+            
+            updateCursorHint();
+            updateKeyboardHighlight();
+        }
+
+        function updateKeyboardHighlight() {
+            document.querySelectorAll('.vk-key').forEach(k => k.classList.remove('highlight'));
+            
+            const q = questions[currentQIndex];
+            if (!q || !typeInput) return;
+
+            const val = typeInput.value;
+            const currentIndex = val.length;
+
+            if (currentIndex >= q.target.length) return;
+
+            if (q.lang === 'en') {
+                const nextChar = q.target[currentIndex].toLowerCase();
+                const keyId = symbolToKey[nextChar];
+                if (keyId) {
+                    const el = document.getElementById(keyId);
+                    if (el) el.classList.add('highlight');
+                }
+            } else if (q.lang === 'zh') {
+                if (q.zhuyin && q.zhuyin[currentIndex]) {
+                    const zyString = q.zhuyin[currentIndex];
+                    for (let char of zyString) {
+                        const keyId = symbolToKey[char];
+                        if (keyId) {
+                            const el = document.getElementById(keyId);
+                            if (el) el.classList.add('highlight');
+                        }
+                    }
+                } else if (!q.zhuyin) {
+                    const nextChar = q.target[currentIndex];
+                    const keyId = symbolToKey[nextChar];
+                    if (keyId) {
+                        const el = document.getElementById(keyId);
+                        if (el) el.classList.add('highlight');
+                    }
+                }
+            }
+        }
+
+        window.checkInput = function() {
+            if (isTransitioning || currentQIndex >= questions.length || !typeInput) return;
+
+            const q = questions[currentQIndex];
+            const val = typeInput.value;
+            
+            updateCursorHint();
+            updateKeyboardHighlight();
+
+            if (val === q.target) {
+                handleSuccess();
+                return;
+            }
+
+            if (val.length > 0) {
+                if (q.lang === 'zh' && /[a-zA-Z]/.test(val)) {
+                    showWarning('error', '⚠️ 哎呀！你打成英文了，請按一下 Shift 鍵切換成【中文】輸入法喔！');
+                } else if (q.lang === 'en' && /[A-Z]/.test(val)) {
+                    showWarning('error', '⚠️ 哎呀！你打成大寫字母了，請按一下鍵盤左邊的 Caps Lock 鍵關閉大寫喔！');
+                } else if (val.length >= q.target.length) {
+                    showWarning('warning', '🤔 哎呀，好像打錯囉！請仔細看題目，清掉重打一次！');
+                } else {
+                    hideWarning();
+                }
+            } else {
+                hideWarning();
+            }
+        };
+
+        function handleSuccess() {
+            isTransitioning = true;
+            if (typeInput) typeInput.disabled = true;
+            hideWarning();
+            document.querySelectorAll('.vk-key').forEach(k => k.classList.remove('highlight'));
+            
+            const successOverlay = document.getElementById('success-overlay');
+            if (successOverlay) successOverlay.classList.remove('hidden');
+            
+            setTimeout(() => {
+                if (currentQIndex < questions.length - 1) {
+                    currentQIndex++;
+                    isTransitioning = false;
+                    renderQuestion();
+                    if (typeInput) setTimeout(() => typeInput.focus(), 50);
+                } else {
+                    finishGame();
+                }
+            }, 600);
+        }
+
+        function showWarning(type, msg) {
+            const box = document.getElementById('warning-box');
+            const text = document.getElementById('warning-text');
+            if (text) text.innerText = msg;
+            if (box) {
+                box.className = `absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-full border-2 px-4 py-3 rounded-xl shadow-lg flex items-center justify-center gap-2 animate-bounce-in z-20 ${
+                    type === 'error' ? 'bg-red-100 border-red-400 text-red-700' : 'bg-orange-100 border-orange-400 text-orange-800'
+                }`;
+                box.classList.remove('hidden');
+            }
+        }
+
+        function hideWarning() {
+            const box = document.getElementById('warning-box');
+            if (box) box.classList.add('hidden');
+        }
+
+        function updateCursorHint() {
+            const cursorHint = document.getElementById('cursor-hint');
+            if (cursorHint && typeInput) {
+                if (typeInput.value === '') {
+                    cursorHint.classList.remove('hidden');
+                } else {
+                    cursorHint.classList.add('hidden');
+                }
+            }
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            startTime = Date.now();
+            if (timerText) timerText.innerText = "0";
+            timerInterval = setInterval(() => {
+                elapsedTime = Math.floor((Date.now() - startTime) / 1000);
+                if (timerText) timerText.innerText = elapsedTime;
+            }, 1000);
+        }
+
+        // --- 遊戲結束與自動上傳 ---
+        async function finishGame() {
+            clearInterval(timerInterval);
+            
+            // 顯示結果畫面
+            const finalTimeEl = document.getElementById('final-time');
+            if (finalTimeEl) finalTimeEl.innerText = elapsedTime;
+            
+            const finishNameEl = document.getElementById('finish-student-name');
+            if (finishNameEl) {
+                finishNameEl.innerText = `${window.studentInfo.classCode} 班 ${window.studentInfo.seatCode} 號`;
+            }
+            
+            // 設定狀態
+            const autoSaveStatus = document.getElementById('auto-save-status');
+            if (autoSaveStatus) {
+                autoSaveStatus.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-blue-500 text-2xl"></i> 成績自動上傳中...';
+                autoSaveStatus.className = "bg-blue-50 border-2 border-blue-200 text-blue-800 p-4 rounded-2xl max-w-md mx-auto shadow-sm font-bold text-lg mb-6 flex flex-col items-center justify-center gap-2";
+            }
+            
+            showScreen('finished-screen');
+
+            // 自動將成績寫入 Firebase
+            if (user && db) {
+                try {
+                    await addDoc(collection(db, 'artifacts', GAME_APP_ID, 'public', 'data', 'typing_scores'), {
+                        className: window.studentInfo.classCode,
+                        seatNumber: window.studentInfo.seatCode,
+                        time: elapsedTime,
+                        difficulty: window.currentDifficulty,
+                        timestamp: Date.now()
+                    });
+                    
+                    if (autoSaveStatus) {
+                        autoSaveStatus.innerHTML = '<i class="fa-solid fa-check-circle text-green-500 text-2xl"></i> 成績上傳成功！已加入排行榜。';
+                        autoSaveStatus.className = "bg-green-50 border-2 border-green-200 text-green-800 p-4 rounded-2xl max-w-md mx-auto shadow-sm font-bold text-lg mb-6 flex flex-col items-center justify-center gap-2";
+                    }
+                } catch (err) {
+                    console.error("成績自動上傳失敗:", err);
+                    
+                    let errorMsg = '網路連線失敗，成績未上傳。';
+                    if (err.message.includes("Missing or insufficient permissions")) {
+                        errorMsg = '資料庫權限不足！請老師確認 Firebase 的 Rules 設定。';
+                    }
+
+                    if (autoSaveStatus) {
+                        autoSaveStatus.innerHTML = `<i class="fa-solid fa-circle-exclamation text-red-500 text-2xl"></i> ${errorMsg}`;
+                        autoSaveStatus.className = "bg-red-50 border-2 border-red-200 text-red-800 p-4 rounded-2xl max-w-md mx-auto shadow-sm font-bold text-lg mb-6 flex flex-col items-center justify-center gap-2";
+                    }
+                }
+            } else {
+                if (autoSaveStatus) {
+                    autoSaveStatus.innerHTML = '<i class="fa-solid fa-cloud-arrow-down text-gray-500 text-2xl"></i> 尚未連線至資料庫，成績未上傳。';
+                    autoSaveStatus.className = "bg-gray-100 border-2 border-gray-300 text-gray-600 p-4 rounded-2xl max-w-md mx-auto shadow-sm font-bold text-lg mb-6 flex flex-col items-center justify-center gap-2";
+                }
+            }
+        }
+
+        window.restartGame = function() {
+            clearInterval(timerInterval);
+            showScreen('intro-screen');
+        };
+
+        window.handleGlobalClick = function() {
+            if (window.currentGameState === 'playing-screen' && !isTransitioning && typeInput) {
+                typeInput.focus();
+            }
+        };
+
+        window.handleInputBlur = function() {
+            if (window.currentGameState === 'playing-screen' && !isTransitioning && typeInput) {
+                setTimeout(() => typeInput.focus(), 150);
+            }
+        };
+
+        // --- 顯示排行榜與分頁切換 ---
+        window.showLeaderboard = function() {
+            showScreen('leaderboard-screen');
+        };
+
+        window.switchLeaderboardTab = function(diff) {
+            window.currentLeaderboardTab = diff;
+            renderLeaderboard();
+        };
+
+        function renderLeaderboard() {
+            ['easy', 'medium', 'hard'].forEach(d => {
+                const btn = document.getElementById(`tab-${d}`);
+                if (btn) {
+                    if (d === window.currentLeaderboardTab) {
+                        btn.className = "flex-1 py-2 px-4 rounded-xl font-bold transition-colors bg-white shadow text-yellow-600 border border-gray-200";
+                    } else {
+                        btn.className = "flex-1 py-2 px-4 rounded-xl font-bold transition-colors text-gray-500 hover:bg-gray-200 border border-transparent";
+                    }
+                }
+            });
+
+            const tbody = document.getElementById('leaderboard-body');
+            if (!tbody) return;
+            
+            if (!user || !db) {
+                tbody.innerHTML = `<tr><td colspan="3" class="text-center py-10 text-gray-500 font-medium">連線準備中...</td></tr>`;
+                return;
+            }
+
+            const filteredData = window.allScoresData.filter(d => d.difficulty === window.currentLeaderboardTab);
+            
+            if (filteredData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" class="text-center py-10 text-gray-400 font-medium"><i class="fa-solid fa-ghost text-2xl mb-2"></i><br>目前還沒有人挑戰這個難度，快來搶第一名！</td></tr>`;
+                return;
+            }
+
+            // 排序：時間越少越前面
+            filteredData.sort((a, b) => a.time - b.time);
+            
+            // 取前 10 名
+            const top10 = filteredData.slice(0, 10);
+            
+            tbody.innerHTML = top10.map((data, index) => {
+                let rankBadge = `<span class="font-bold text-gray-500">${index + 1}</span>`;
+                if (index === 0) rankBadge = `<i class="fa-solid fa-crown text-2xl text-yellow-400 drop-shadow-md"></i>`;
+                if (index === 1) rankBadge = `<i class="fa-solid fa-medal text-2xl text-gray-300 drop-shadow-md"></i>`;
+                if (index === 2) rankBadge = `<i class="fa-solid fa-medal text-2xl text-amber-600 drop-shadow-md"></i>`;
+
+                // 標示自己：如果成績等於目前登入者的成績，字體高亮
+                const isMe = (data.className === window.studentInfo.classCode && data.seatNumber === window.studentInfo.seatCode);
+                const rowClass = isMe ? "bg-yellow-100 hover:bg-yellow-200" : "hover:bg-yellow-50";
+
+                return `
+                    <tr class="border-b border-gray-100 transition-colors ${rowClass}">
+                        <td class="py-4 px-6 text-center font-bold text-lg">${rankBadge}</td>
+                        <td class="py-4 px-6 font-bold text-gray-700 text-lg">${data.className} 班 ${data.seatNumber} 號 ${isMe ? '<span class="text-xs bg-red-500 text-white px-2 py-1 rounded-full ml-2">我</span>' : ''}</td>
+                        <td class="py-4 px-6 font-black text-blue-600 text-right text-xl">${data.time} <span class="text-sm text-gray-500">秒</span></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // --- 顯示教師後台與分頁切換 ---
+        window.switchTeacherTab = function(diff) {
+            window.currentTeacherTab = diff;
+            renderTeacherDashboard();
+        };
+
+        function renderTeacherDashboard() {
+            ['easy', 'medium', 'hard'].forEach(d => {
+                const btn = document.getElementById(`t-tab-${d}`);
+                if (btn) {
+                    if (d === window.currentTeacherTab) {
+                        btn.className = "flex-1 py-2 px-4 rounded-xl font-bold transition-colors bg-white shadow text-gray-800 border border-gray-200";
+                    } else {
+                        btn.className = "flex-1 py-2 px-4 rounded-xl font-bold transition-colors text-gray-500 hover:bg-gray-200 border border-transparent";
+                    }
+                }
+            });
+
+            const tbody = document.getElementById('teacher-dashboard-body');
+            if (!tbody) return;
+            
+            if (!user || !db) {
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center py-10 text-gray-500 font-medium">連線準備中...</td></tr>`;
+                return;
+            }
+
+            const filteredData = window.allScoresData.filter(d => d.difficulty === window.currentTeacherTab);
+            
+            if (filteredData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center py-10 text-gray-400 font-medium">這個難度目前還沒有學生成績紀錄。</td></tr>`;
+                return;
+            }
+
+            // 依照時間排序 (由快到慢)
+            filteredData.sort((a, b) => a.time - b.time);
+            
+            // 處理：如果同一個學生有多筆，只顯示最好的一筆 (最佳成績)
+            const bestScoresMap = new Map();
+            filteredData.forEach(d => {
+                const key = `${d.className}-${d.seatNumber}`;
+                if (!bestScoresMap.has(key) || d.time < bestScoresMap.get(key).time) {
+                    bestScoresMap.set(key, d);
+                }
+            });
+
+            const finalDashboardData = Array.from(bestScoresMap.values()).sort((a, b) => a.time - b.time);
+
+            tbody.innerHTML = finalDashboardData.map((data, index) => {
+                // 轉換時間戳記為可讀格式
+                const dateObj = new Date(data.timestamp);
+                const timeString = `${dateObj.getMonth()+1}/${dateObj.getDate()} ${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}`;
+
+                return `
+                    <tr class="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                        <td class="py-3 px-6 text-center font-bold text-gray-500">${index + 1}</td>
+                        <td class="py-3 px-6 font-bold text-gray-800">${data.className} 班 ${data.seatNumber} 號</td>
+                        <td class="py-3 px-6 font-black text-blue-600 text-right">${data.time} 秒</td>
+                        <td class="py-3 px-6 text-right text-sm text-gray-400 font-mono">${timeString}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // 啟動 Firebase
+        initFirebase();
+
+    </script>
+</body>
+</html>
